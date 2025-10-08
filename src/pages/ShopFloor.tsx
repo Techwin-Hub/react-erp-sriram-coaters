@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { Play, Pause, CheckCircle, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Play, Pause, CheckCircle } from 'lucide-react';
 
 interface Job {
   id: number;
@@ -20,57 +19,35 @@ export default function ShopFloor() {
     loadJobs();
   }, []);
 
-  const loadJobs = async () => {
-    const { data } = await supabase
-      .from('jobs')
-      .select('*, customers(name)')
-      .in('status', ['pending', 'in-progress'])
-      .order('due_date');
-
-    if (data) setJobs(data);
+  const loadJobs = () => {
+    const mockJobs = [
+      { id: 1, job_id: 'CNC-2025-001', part_no: 'P1001', qty_ordered: 100, qty_completed: 50, status: 'in-progress', current_operation: 'OP10', customers: { name: 'ABC Corp' } },
+      { id: 2, job_id: 'CNC-2025-002', part_no: 'P1002', qty_ordered: 150, qty_completed: 0, status: 'pending', current_operation: null, customers: { name: 'XYZ Inc' } },
+      { id: 3, job_id: 'PLT-2025-001', part_no: 'P2001', qty_ordered: 300, qty_completed: 100, status: 'in-progress', current_operation: 'Plating', customers: { name: 'ABC Corp' } },
+    ];
+    setJobs(mockJobs);
   };
 
-  const handleStartOperation = async (job: Job) => {
-    await supabase
-      .from('jobs')
-      .update({
-        status: 'in-progress',
-        current_operation: 'Operation 1',
-      })
-      .eq('id', job.id);
-
-    loadJobs();
+  const handleStartOperation = (job: Job) => {
+    setJobs(jobs.map(j => j.id === job.id ? { ...j, status: 'in-progress', current_operation: 'Operation 1' } : j));
   };
 
-  const handlePauseOperation = async (job: Job) => {
-    await supabase
-      .from('jobs')
-      .update({
-        status: 'pending',
-        current_operation: null,
-      })
-      .eq('id', job.id);
-
-    loadJobs();
+  const handlePauseOperation = (job: Job) => {
+    setJobs(jobs.map(j => j.id === job.id ? { ...j, status: 'pending', current_operation: null } : j));
   };
 
-  const handleCompleteOperation = async (job: Job) => {
+  const handleCompleteOperation = (job: Job) => {
     const completed = prompt('Enter quantity completed:', job.qty_ordered.toString());
     if (!completed) return;
 
     const qtyCompleted = parseInt(completed);
     const isFullyCompleted = qtyCompleted >= job.qty_ordered;
 
-    await supabase
-      .from('jobs')
-      .update({
-        qty_completed: qtyCompleted,
-        status: isFullyCompleted ? 'completed' : 'in-progress',
-        current_operation: isFullyCompleted ? null : job.current_operation,
-      })
-      .eq('id', job.id);
-
-    loadJobs();
+    if (isFullyCompleted) {
+        setJobs(jobs.filter(j => j.id !== job.id));
+    } else {
+        setJobs(jobs.map(j => j.id === job.id ? { ...j, qty_completed: qtyCompleted } : j));
+    }
   };
 
   return (

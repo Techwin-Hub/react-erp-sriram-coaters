@@ -1,33 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { Plus } from 'lucide-react';
 
+interface Machine {
+  id: number;
+  name: string;
+  type: string;
+  model: string;
+  location: string;
+  last_pm_date: string;
+}
+
+const initialFormData = {
+  name: '',
+  type: '',
+  model: '',
+  location: '',
+  last_pm_date: '',
+};
+
 export default function Machines() {
-  const [machines, setMachines] = useState([]);
+  const [machines, setMachines] = useState<Machine[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    type: '',
-    model: '',
-    location: '',
-    last_pm_date: '',
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   useEffect(() => {
     loadMachines();
   }, []);
 
-  const loadMachines = async () => {
-    const { data } = await supabase.from('machines').select('*').order('created_at', { ascending: false });
-    if (data) setMachines(data);
+  const loadMachines = () => {
+    const mockMachines = [
+      { id: 1, name: 'CNC-01', type: 'CNC Mill', model: 'Haas VF-2', location: 'Shop Floor 1', last_pm_date: '2025-09-15' },
+      { id: 2, name: 'CNC-02', type: 'CNC Lathe', model: 'Mazak QT-250', location: 'Shop Floor 1', last_pm_date: '2025-08-20' },
+      { id: 3, name: 'PLT-01', type: 'Plating Line', model: 'Custom', location: 'Plating Section', last_pm_date: '2025-10-01' },
+    ];
+    setMachines(mockMachines);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from('machines').insert(formData);
-    loadMachines();
+    const newMachine = { ...formData, id: Math.max(...machines.map(m => m.id), 0) + 1 };
+    setMachines([newMachine, ...machines]);
     setIsModalOpen(false);
     setFormData({ name: '', type: '', model: '', location: '', last_pm_date: '' });
   };

@@ -1,29 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { Plus, Check } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 interface Challan {
-  id?: number;
+  id: number;
   challan_no: string;
   job_id: string;
   customer_id: number;
   qty_sent: number;
   process_type: string;
   thickness: string;
-  params_json: any;
+  params_json: Record<string, string>;
   date_sent: string;
   expected_return_date: string;
   date_received: string | null;
-  status: string;
+  status: 'sent' | 'received';
   customers?: { name: string };
+}
+
+interface Job {
+    id: number;
+    job_id: string;
+    status: string;
+}
+
+interface Customer {
+    id: number;
+    name: string;
 }
 
 export default function Challans() {
   const [challans, setChallans] = useState<Challan[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     challan_no: '',
@@ -42,23 +52,28 @@ export default function Challans() {
     loadCustomers();
   }, []);
 
-  const loadChallans = async () => {
-    const { data } = await supabase
-      .from('challans')
-      .select('*, customers(name)')
-      .order('created_at', { ascending: false });
-
-    if (data) setChallans(data);
+  const loadChallans = () => {
+    const mockChallans: Challan[] = [
+      { id: 1, challan_no: 'CH-2025-001', job_id: 'CNC-2025-001', customer_id: 1, qty_sent: 100, process_type: 'Zinc Plating', thickness: '10-15 microns', params_json: {}, date_sent: '2025-10-20', expected_return_date: '2025-10-25', date_received: null, status: 'sent', customers: { name: 'ABC Corp' } },
+      { id: 2, challan_no: 'CH-2025-002', job_id: 'CNC-2025-002', customer_id: 2, qty_sent: 150, process_type: 'Nickel Plating', thickness: '5-10 microns', params_json: {}, date_sent: '2025-10-18', expected_return_date: '2025-10-23', date_received: '2025-10-22', status: 'received', customers: { name: 'XYZ Inc' } },
+    ];
+    setChallans(mockChallans);
   };
 
-  const loadJobs = async () => {
-    const { data } = await supabase.from('jobs').select('*').order('job_id');
-    if (data) setJobs(data);
+  const loadJobs = () => {
+    const mockJobs = [
+        { id: 1, job_id: 'CNC-2025-001', status: 'pending-challan' },
+        { id: 2, job_id: 'CNC-2025-002', status: 'completed' },
+    ];
+    setJobs(mockJobs);
   };
 
-  const loadCustomers = async () => {
-    const { data } = await supabase.from('customers').select('*').order('name');
-    if (data) setCustomers(data);
+  const loadCustomers = () => {
+    const mockCustomers = [
+        { id: 1, name: 'ABC Corp' },
+        { id: 2, name: 'XYZ Inc' },
+    ];
+    setCustomers(mockCustomers);
   };
 
   const generateChallanNo = () => {
@@ -67,44 +82,33 @@ export default function Challans() {
     return `CH-${year}-${random}`;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const challanData = {
-      ...formData,
+    const newChallan: Challan = {
+      id: Math.max(...challans.map(c => c.id || 0), 0) + 1,
+      challan_no: formData.challan_no,
+      job_id: formData.job_id,
       customer_id: parseInt(formData.customer_id),
       qty_sent: parseInt(formData.qty_sent),
+      process_type: formData.process_type,
+      thickness: formData.thickness,
       params_json: { temp: '65C', current: '2.5A' },
-      status: 'sent',
+      date_sent: formData.date_sent,
+      expected_return_date: formData.expected_return_date,
       date_received: null,
+      status: 'sent',
+      customers: { name: customers.find(c => c.id === parseInt(formData.customer_id))?.name || '' },
     };
 
-    await supabase.from('challans').insert(challanData);
-
-    await supabase
-      .from('jobs')
-      .update({ status: 'pending-challan' })
-      .eq('job_id', formData.job_id);
-
-    loadChallans();
+    setChallans([newChallan, ...challans]);
+    setJobs(jobs.map(j => j.job_id === formData.job_id ? { ...j, status: 'pending-challan' } : j));
     handleClose();
   };
 
-  const handleReceive = async (challan: Challan) => {
-    await supabase
-      .from('challans')
-      .update({
-        status: 'received',
-        date_received: new Date().toISOString().split('T')[0],
-      })
-      .eq('id', challan.id);
-
-    await supabase
-      .from('jobs')
-      .update({ status: 'completed' })
-      .eq('job_id', challan.job_id);
-
-    loadChallans();
+  const handleReceive = (challan: Challan) => {
+    setChallans(challans.map(c => c.id === challan.id ? { ...c, status: 'received', date_received: new Date().toISOString().split('T')[0] } : c));
+    setJobs(jobs.map(j => j.job_id === challan.job_id ? { ...j, status: 'completed' } : j));
   };
 
   const handleClose = () => {
@@ -121,13 +125,13 @@ export default function Challans() {
     });
   };
 
-  const columns = [
+  const columns: { key: string, label: string, render?: (value: unknown, row: Challan) => React.ReactNode }[] = [
     { key: 'challan_no', label: 'Challan No' },
     { key: 'job_id', label: 'Job ID' },
     {
       key: 'customers',
       label: 'Customer',
-      render: (value: any) => value?.name || '',
+      render: (v) => (v as { name: string })?.name,
     },
     { key: 'qty_sent', label: 'Qty Sent' },
     { key: 'process_type', label: 'Process' },
@@ -136,15 +140,15 @@ export default function Challans() {
     {
       key: 'status',
       label: 'Status',
-      render: (value: string) => (
+      render: (v) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            value === 'received'
+            v === 'received'
               ? 'bg-green-100 text-green-800'
               : 'bg-amber-100 text-amber-800'
           }`}
         >
-          {value.toUpperCase()}
+          {(v as string).toUpperCase()}
         </span>
       ),
     },

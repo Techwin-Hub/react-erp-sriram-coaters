@@ -1,24 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { Plus, Printer } from 'lucide-react';
+import { Plus } from 'lucide-react';
+
+interface Invoice {
+  id: number;
+  invoice_no: string;
+  job_id: string;
+  customer_id: number;
+  invoice_date: string;
+  taxable_amount: number;
+  gst_amount: number;
+  total_amount: number;
+  payment_status: 'pending' | 'paid';
+  customers: { name: string };
+}
+
+interface Job {
+  id: number;
+  job_id: string;
+}
+
+interface Customer {
+  id: number;
+  name: string;
+}
+
+const initialFormData = {
+  invoice_no: '',
+  job_id: '',
+  customer_id: '',
+  invoice_date: '',
+  taxable_amount: '',
+  gst_amount: '',
+  total_amount: '',
+};
 
 export default function Billing() {
-  const [invoices, setInvoices] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [printInvoice, setPrintInvoice] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    invoice_no: '',
-    job_id: '',
-    customer_id: '',
-    invoice_date: '',
-    taxable_amount: '',
-    gst_amount: '',
-    total_amount: '',
-  });
+  const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
+  const [formData, setFormData] = useState(initialFormData);
 
   useEffect(() => {
     loadInvoices();
@@ -26,22 +50,28 @@ export default function Billing() {
     loadCustomers();
   }, []);
 
-  const loadInvoices = async () => {
-    const { data } = await supabase
-      .from('invoices')
-      .select('*, customers(name)')
-      .order('created_at', { ascending: false });
-    if (data) setInvoices(data);
+  const loadInvoices = () => {
+    const mockInvoices: Invoice[] = [
+      { id: 1, invoice_no: 'INV-2025-001', job_id: 'CNC-2025-001', customer_id: 1, invoice_date: '2025-10-26', taxable_amount: 5000, gst_amount: 900, total_amount: 5900, payment_status: 'pending', customers: { name: 'ABC Corp' } },
+      { id: 2, invoice_no: 'INV-2025-002', job_id: 'PLT-2025-001', customer_id: 2, invoice_date: '2025-10-25', taxable_amount: 7500, gst_amount: 1350, total_amount: 8850, payment_status: 'paid', customers: { name: 'XYZ Inc' } },
+    ];
+    setInvoices(mockInvoices);
   };
 
-  const loadJobs = async () => {
-    const { data } = await supabase.from('jobs').select('*').eq('status', 'completed');
-    if (data) setJobs(data);
+  const loadJobs = () => {
+    const mockJobs: Job[] = [
+        { id: 1, job_id: 'CNC-2025-001' },
+        { id: 2, job_id: 'PLT-2025-001' },
+    ];
+    setJobs(mockJobs);
   };
 
-  const loadCustomers = async () => {
-    const { data } = await supabase.from('customers').select('*');
-    if (data) setCustomers(data);
+  const loadCustomers = () => {
+    const mockCustomers: Customer[] = [
+        { id: 1, name: 'ABC Corp' },
+        { id: 2, name: 'XYZ Inc' },
+    ];
+    setCustomers(mockCustomers);
   };
 
   const generateInvoiceNo = () => {
@@ -57,49 +87,44 @@ export default function Billing() {
     return { gst_amount: gstAmt.toFixed(2), total_amount: totalAmt.toFixed(2) };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const invoiceData = {
-      ...formData,
+    const newInvoice: Invoice = {
+      id: Math.max(...invoices.map(inv => inv.id), 0) + 1,
+      invoice_no: formData.invoice_no,
+      job_id: formData.job_id,
       customer_id: parseInt(formData.customer_id),
+      invoice_date: formData.invoice_date,
       taxable_amount: parseFloat(formData.taxable_amount),
       gst_amount: parseFloat(formData.gst_amount),
       total_amount: parseFloat(formData.total_amount),
       payment_status: 'pending',
+      customers: { name: customers.find(c => c.id === parseInt(formData.customer_id))?.name || '' },
     };
 
-    await supabase.from('invoices').insert(invoiceData);
-    loadInvoices();
+    setInvoices([newInvoice, ...invoices]);
     setIsModalOpen(false);
-    setFormData({
-      invoice_no: '',
-      job_id: '',
-      customer_id: '',
-      invoice_date: '',
-      taxable_amount: '',
-      gst_amount: '',
-      total_amount: '',
-    });
+    setFormData(initialFormData);
   };
 
-  const handlePrint = (invoice: any) => {
+  const handlePrint = (invoice: Invoice) => {
     setPrintInvoice(invoice);
     setTimeout(() => window.print(), 100);
   };
 
-  const columns = [
+  const columns: { key: string, label: string, render?: (value: unknown, row: Invoice) => React.ReactNode }[] = [
     { key: 'invoice_no', label: 'Invoice No' },
     { key: 'job_id', label: 'Job ID' },
-    { key: 'customers', label: 'Customer', render: (v: any) => v?.name },
+    { key: 'customers', label: 'Customer', render: (v) => (v as { name: string })?.name },
     { key: 'invoice_date', label: 'Date' },
-    { key: 'total_amount', label: 'Total', render: (v: number) => `₹${v.toLocaleString()}` },
+    { key: 'total_amount', label: 'Total', render: (v) => `₹${(v as number).toLocaleString()}` },
     {
       key: 'payment_status',
       label: 'Status',
-      render: (v: string) => (
+      render: (v) => (
         <span className={`px-2 py-1 rounded-full text-xs ${v === 'paid' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-          {v.toUpperCase()}
+          {(v as string).toUpperCase()}
         </span>
       ),
     },
@@ -161,7 +186,7 @@ export default function Billing() {
                 required
               >
                 <option value="">Select Job</option>
-                {jobs.map((j: any) => (
+                {jobs.map((j) => (
                   <option key={j.id} value={j.job_id}>
                     {j.job_id}
                   </option>
@@ -177,7 +202,7 @@ export default function Billing() {
                 required
               >
                 <option value="">Select Customer</option>
-                {customers.map((c: any) => (
+                {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>

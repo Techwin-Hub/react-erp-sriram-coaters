@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { Plus } from 'lucide-react';
@@ -29,25 +28,26 @@ export default function Employees() {
     loadEmployees();
   }, []);
 
-  const loadEmployees = async () => {
-    const { data } = await supabase
-      .from('employees')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data) setEmployees(data);
+  const loadEmployees = () => {
+    // Simulate API call
+    setTimeout(() => {
+      const mockEmployees = [
+        { id: 1, name: 'John Doe', role: 'CNC Operator', phone: '1234567890', shift: 'A', skill_level: 'Expert' },
+        { id: 2, name: 'Jane Smith', role: 'Plating Operator', phone: '0987654321', shift: 'B', skill_level: 'Advanced' },
+        { id: 3, name: 'Peter Jones', role: 'Quality Inspector', phone: '1122334455', shift: 'A', skill_level: 'Intermediate' },
+      ];
+      setEmployees(mockEmployees);
+    }, 200);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (editingEmployee?.id) {
-      await supabase.from('employees').update(formData).eq('id', editingEmployee.id);
+      setEmployees(employees.map(emp => emp.id === editingEmployee.id ? { ...formData, id: editingEmployee.id } : emp));
     } else {
-      await supabase.from('employees').insert(formData);
+      const newEmployee = { ...formData, id: Math.max(...employees.map(e => e.id || 0), 0) + 1 };
+      setEmployees([newEmployee, ...employees]);
     }
-
-    loadEmployees();
     handleClose();
   };
 
@@ -57,10 +57,9 @@ export default function Employees() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (employee: Employee) => {
+  const handleDelete = (employee: Employee) => {
     if (confirm(`Are you sure you want to delete ${employee.name}?`)) {
-      await supabase.from('employees').delete().eq('id', employee.id);
-      loadEmployees();
+      setEmployees(employees.filter(emp => emp.id !== employee.id));
     }
   };
 

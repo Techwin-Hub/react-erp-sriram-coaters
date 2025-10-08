@@ -51,36 +51,33 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route
-        path="/*"
         element={
           <ProtectedRoute>
-            <Layout>
-              <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/employees" element={<Employees />} />
-                <Route path="/parts" element={<Parts />} />
-                <Route path="/machines" element={<Machines />} />
-                <Route path="/enquiries" element={<Enquiries />} />
-                <Route path="/jobs" element={<Jobs />} />
-                <Route path="/routing" element={<Routing />} />
-                <Route path="/shop-floor" element={<ShopFloor />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/tooling" element={<Tooling />} />
-                <Route path="/challans" element={<Challans />} />
-                <Route path="/quality" element={<Quality />} />
-                <Route path="/maintenance" element={<Maintenance />} />
-                <Route path="/purchase" element={<Purchase />} />
-                <Route path="/billing" element={<Billing />} />
-                <Route path="/dispatch" element={<Dispatch />} />
-                <Route path="/attendance" element={<Attendance />} />
-                <Route path="/expenses" element={<Expenses />} />
-                <Route path="/reports" element={<Reports />} />
-              </Routes>
-            </Layout>
+            <Layout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/employees" element={<Employees />} />
+        <Route path="/parts" element={<Parts />} />
+        <Route path="/machines" element={<Machines />} />
+        <Route path="/enquiries" element={<Enquiries />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/routing" element={<Routing />} />
+        <Route path="/shop-floor" element={<ShopFloor />} />
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/tooling" element={<Tooling />} />
+        <Route path="/challans" element={<Challans />} />
+        <Route path="/quality" element={<Quality />} />
+        <Route path="/maintenance" element={<Maintenance />} />
+        <Route path="/purchase" element={<Purchase />} />
+        <Route path="/billing" element={<Billing />} />
+        <Route path="/dispatch" element={<Dispatch />} />
+        <Route path="/attendance" element={<Attendance />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/reports" element={<Reports />} />
+      </Route>
     </Routes>
   );
 }

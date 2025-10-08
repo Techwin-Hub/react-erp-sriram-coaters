@@ -1,22 +1,29 @@
 import React from 'react';
-import { ChevronDown, ChevronUp, Trash2, Edit, Eye } from 'lucide-react';
+import { Trash2, Edit, Eye } from 'lucide-react';
 
-interface Column {
+interface Column<T> {
   key: string;
   label: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: any, row: T) => React.ReactNode;
 }
 
-interface DataTableProps {
-  columns: Column[];
-  data: any[];
-  onEdit?: (row: any) => void;
-  onDelete?: (row: any) => void;
-  onView?: (row: any) => void;
+interface DataTableProps<T> {
+  columns: Column<T>[];
+  data: T[];
+  onEdit?: (row: T) => void;
+  onDelete?: (row: T) => void;
+  onView?: (row: T) => void;
   actions?: boolean;
 }
 
-export default function DataTable({ columns, data, onEdit, onDelete, onView, actions = true }: DataTableProps) {
+export default function DataTable<T>({
+  columns,
+  data,
+  onEdit,
+  onDelete,
+  onView,
+  actions = true,
+}: DataTableProps<T>) {
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow">
       <table className="min-w-full divide-y divide-slate-200">
@@ -49,7 +56,9 @@ export default function DataTable({ columns, data, onEdit, onDelete, onView, act
               <tr key={idx} className="hover:bg-slate-50 transition">
                 {columns.map((column) => (
                   <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                    {column.render ? column.render(row[column.key], row) : row[column.key]}
+                    {column.render
+                      ? column.render((row as any)[column.key], row)
+                      : ((row as any)[column.key] as React.ReactNode)}
                   </td>
                 ))}
                 {actions && (

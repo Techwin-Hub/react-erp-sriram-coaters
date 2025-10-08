@@ -1,30 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect } from 'react';
 import { Download, FileText } from 'lucide-react';
 import Papa from 'papaparse';
 
+interface Turnover {
+  month: string;
+  amount: number;
+}
+
+interface JobReport {
+  id: number;
+  job_id: string;
+  customers: { name: string };
+  status: string;
+  total_cost: number;
+}
+
+interface ChallanReport {
+  id: number;
+  challan_no: string;
+  job_id: string;
+  customers: { name: string };
+  status: string;
+}
+
 export default function Reports() {
-  const [turnover, setTurnover] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [challans, setChallans] = useState([]);
+  const [turnover, setTurnover] = useState<Turnover[]>([]);
+  const [jobs, setJobs] = useState<JobReport[]>([]);
+  const [challans, setChallans] = useState<ChallanReport[]>([]);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
-    const [turnoverData, jobsData, challansData] = await Promise.all([
-      supabase.from('monthly_turnover').select('*').order('month'),
-      supabase.from('jobs').select('*, customers(name)'),
-      supabase.from('challans').select('*, customers(name)').eq('status', 'sent'),
-    ]);
+  const loadData = () => {
+    const mockTurnover: Turnover[] = [
+      { month: '2025-08', amount: 400000 },
+      { month: '2025-09', amount: 420000 },
+      { month: '2025-10', amount: 450000 },
+    ];
+    const mockJobs: JobReport[] = [
+      { id: 1, job_id: 'CNC-2025-001', customers: { name: 'ABC Corp' }, status: 'completed', total_cost: 4500 },
+      { id: 2, job_id: 'PLT-2025-001', customers: { name: 'XYZ Inc' }, status: 'completed', total_cost: 6800 },
+    ];
+    const mockChallans: ChallanReport[] = [
+      { id: 1, challan_no: 'CH-2025-001', job_id: 'CNC-2025-003', customers: { name: 'ABC Corp' }, status: 'sent' },
+    ];
 
-    if (turnoverData.data) setTurnover(turnoverData.data);
-    if (jobsData.data) setJobs(jobsData.data);
-    if (challansData.data) setChallans(challansData.data);
+    setTurnover(mockTurnover);
+    setJobs(mockJobs);
+    setChallans(mockChallans);
   };
 
-  const exportToCSV = (data: any[], filename: string) => {
+  const exportToCSV = (data: (Turnover | JobReport | ChallanReport)[], filename: string) => {
     const csv = Papa.unparse(data);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -117,11 +144,11 @@ export default function Reports() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {turnover.map((item: any, idx) => (
+              {turnover.map((item, idx) => (
                 <tr key={idx}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{item.month}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 text-right font-semibold">
-                    ₹{item.amount?.toLocaleString()}
+                    ₹{item.amount.toLocaleString()}
                   </td>
                 </tr>
               ))}

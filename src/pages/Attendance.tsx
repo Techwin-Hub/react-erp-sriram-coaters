@@ -1,25 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import { Upload, Download } from 'lucide-react';
 import Papa from 'papaparse';
 
+interface AttendanceRecord {
+  id: number;
+  emp_id: number;
+  date: string;
+  in_time: string;
+  out_time: string;
+  worked_hours: number;
+  employees: { name: string };
+}
+
+interface CsvRow {
+  emp_id: string;
+  date: string;
+  in_time: string;
+  out_time: string;
+  worked_hours: string;
+}
+
+const mockAttendance: AttendanceRecord[] = [
+  { id: 1, emp_id: 1, date: '2025-10-26', in_time: '08:00', out_time: '17:00', worked_hours: 8, employees: { name: 'John Doe' } },
+  { id: 2, emp_id: 2, date: '2025-10-26', in_time: '08:05', out_time: '17:02', worked_hours: 7.95, employees: { name: 'Jane Smith' } },
+  { id: 3, emp_id: 3, date: '2025-10-26', in_time: '07:55', out_time: '17:10', worked_hours: 8.25, employees: { name: 'Peter Jones' } },
+];
+
+const mockEmployees = [
+  { id: 1, name: 'John Doe' },
+  { id: 2, name: 'Jane Smith' },
+  { id: 3, name: 'Peter Jones' },
+];
+
 export default function Attendance() {
-  const [attendance, setAttendance] = useState([]);
-  const [preview, setPreview] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [preview, setPreview] = useState<CsvRow[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadAttendance();
   }, []);
 
-  const loadAttendance = async () => {
-    const { data } = await supabase
-      .from('attendance')
-      .select('*, employees(name)')
-      .order('date', { ascending: false })
-      .limit(50);
-    if (data) setAttendance(data);
+  const loadAttendance = () => {
+    // Simulate API call
+    setTimeout(() => {
+      setAttendance([...mockAttendance].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }, 200);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,24 +55,30 @@ export default function Attendance() {
 
     Papa.parse(file, {
       header: true,
-      complete: (results) => {
-        setPreview(results.data.filter((row: any) => row.emp_id && row.date));
+      complete: (results: { data: CsvRow[] }) => {
+        const validData = results.data.filter((row: CsvRow) => row.emp_id && row.date);
+        setPreview(validData);
         setShowPreview(true);
       },
     });
   };
 
-  const handleSaveAttendance = async () => {
-    const records = preview.map((row: any) => ({
-      emp_id: parseInt(row.emp_id),
-      date: row.date,
-      in_time: row.in_time,
-      out_time: row.out_time,
-      worked_hours: parseFloat(row.worked_hours),
-    }));
+  const handleSaveAttendance = () => {
+    const newRecords: AttendanceRecord[] = preview.map((row, index) => {
+      const employee = mockEmployees.find(e => e.id === parseInt(row.emp_id));
+      return {
+        id: Math.max(...attendance.map(a => a.id), 0) + index + 1,
+        emp_id: parseInt(row.emp_id),
+        date: row.date,
+        in_time: row.in_time,
+        out_time: row.out_time,
+        worked_hours: parseFloat(row.worked_hours),
+        employees: { name: employee ? employee.name : 'Unknown' },
+      };
+    });
 
-    await supabase.from('attendance').insert(records);
-    loadAttendance();
+    const updatedAttendance = [...newRecords, ...attendance];
+    setAttendance(updatedAttendance.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     setShowPreview(false);
     setPreview([]);
   };
@@ -70,8 +103,8 @@ export default function Attendance() {
     a.click();
   };
 
-  const columns = [
-    { key: 'employees', label: 'Employee', render: (v: any) => v?.name },
+  const columns: { key: string, label: string, render?: (value: unknown, row: AttendanceRecord) => React.ReactNode }[] = [
+    { key: 'employees', label: 'Employee', render: (v) => (v as { name: string })?.name },
     { key: 'date', label: 'Date' },
     { key: 'in_time', label: 'In Time' },
     { key: 'out_time', label: 'Out Time' },

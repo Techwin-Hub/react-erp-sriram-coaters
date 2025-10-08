@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { Plus } from 'lucide-react';
@@ -33,30 +32,29 @@ export default function Customers() {
     loadCustomers();
   }, []);
 
-  const loadCustomers = async () => {
-    const { data } = await supabase
-      .from('customers')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      setCustomers(data);
-    }
+  const loadCustomers = () => {
+    // Simulate API call
+    setTimeout(() => {
+      const mockCustomers = [
+        { id: 1, name: 'ABC Corp', gstin: '22AAAAA0000A1Z5', contact_person: 'Anil Kumar', phone: '9876543210', billing_address: '123 Main St, Mumbai', shipping_address: '123 Main St, Mumbai', credit_days: 30 },
+        { id: 2, name: 'XYZ Inc', gstin: '29BBBBB0000B1Z5', contact_person: 'Sunita Sharma', phone: '9876543211', billing_address: '456 Park Ave, Delhi', shipping_address: '456 Park Ave, Delhi', credit_days: 45 },
+      ];
+      setCustomers(mockCustomers);
+    }, 200);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    // This is a mock implementation
     if (editingCustomer?.id) {
-      await supabase
-        .from('customers')
-        .update(formData)
-        .eq('id', editingCustomer.id);
+      // Update existing customer
+      const updatedCustomers = customers.map(c => c.id === editingCustomer.id ? { ...c, ...formData } : c);
+      setCustomers(updatedCustomers);
     } else {
-      await supabase.from('customers').insert(formData);
+      // Add new customer
+      const newCustomer = { ...formData, id: Math.max(...customers.map(c => c.id || 0), 0) + 1 };
+      setCustomers([newCustomer, ...customers]);
     }
-
-    loadCustomers();
     handleClose();
   };
 
@@ -66,10 +64,10 @@ export default function Customers() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (customer: Customer) => {
+  const handleDelete = (customer: Customer) => {
     if (confirm(`Are you sure you want to delete ${customer.name}?`)) {
-      await supabase.from('customers').delete().eq('id', customer.id);
-      loadCustomers();
+      // This is a mock implementation
+      setCustomers(customers.filter(c => c.id !== customer.id));
     }
   };
 

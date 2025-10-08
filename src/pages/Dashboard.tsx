@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import {
   Briefcase,
   CheckCircle,
@@ -64,61 +63,46 @@ export default function Dashboard() {
     loadJobsByStatus();
   }, []);
 
-  const loadMetrics = async () => {
-    const [openJobsResult, completedJobsResult, challansResult, invoicesResult] = await Promise.all([
-      supabase.from('jobs').select('*', { count: 'exact', head: true }).in('status', ['pending', 'in-progress']),
-      supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-      supabase.from('challans').select('*', { count: 'exact', head: true }).eq('status', 'sent'),
-      supabase.from('invoices').select('total_amount').eq('payment_status', 'pending'),
-    ]);
-
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const { data: turnoverData } = await supabase
-      .from('monthly_turnover')
-      .select('amount')
-      .eq('month', currentMonth)
-      .maybeSingle();
-
-    const receivables = invoicesResult.data?.reduce((sum, inv) => sum + (inv.total_amount || 0), 0) || 0;
-
-    setMetrics({
-      openJobs: openJobsResult.count || 0,
-      completedJobs: completedJobsResult.count || 0,
-      monthlyTurnover: turnoverData?.amount || 0,
-      pendingChallans: challansResult.count || 0,
+  const loadMetrics = () => {
+    // Mock data
+    const mockMetrics = {
+      openJobs: 12,
+      completedJobs: 45,
+      monthlyTurnover: 450000,
+      pendingChallans: 8,
       machineUtilization: 78,
-      receivables,
-    });
+      receivables: 120000,
+    };
+    setMetrics(mockMetrics);
   };
 
-  const loadTurnoverData = async () => {
-    const { data } = await supabase
-      .from('monthly_turnover')
-      .select('*')
-      .order('month', { ascending: true })
-      .limit(6);
-
-    if (data) {
-      setTurnoverData(data);
-    }
+  const loadTurnoverData = () => {
+    // Mock data
+    const mockTurnover = [
+      { month: '2025-05', amount: 380000 },
+      { month: '2025-06', amount: 410000 },
+      { month: '2025-07', amount: 430000 },
+      { month: '2025-08', amount: 400000 },
+      { month: '2025-09', amount: 420000 },
+      { month: '2025-10', amount: 450000 },
+    ];
+    setTurnoverData(mockTurnover);
   };
 
-  const loadJobsByStatus = async () => {
-    const { data } = await supabase.from('jobs').select('status');
-
-    if (data) {
-      const statusCounts = data.reduce((acc: Record<string, number>, job) => {
-        acc[job.status] = (acc[job.status] || 0) + 1;
-        return acc;
-      }, {});
-
-      setJobsByStatus(
-        Object.entries(statusCounts).map(([status, count]) => ({
-          status,
-          count: count as number,
-        }))
-      );
-    }
+  const loadJobsByStatus = () => {
+    // Mock data
+    const mockStatusCounts = {
+      pending: 5,
+      'in-progress': 7,
+      completed: 45,
+      'pending-challan': 3,
+    };
+    setJobsByStatus(
+      Object.entries(mockStatusCounts).map(([status, count]) => ({
+        status,
+        count,
+      }))
+    );
   };
 
   const formatCurrency = (amount: number) => {

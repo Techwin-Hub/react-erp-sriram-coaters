@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { Plus, Eye } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
+interface RouteOp {
+  op_seq: number;
+  op_name: string;
+  machine_id: string;
+  operator_id: string;
+}
 interface Job {
-  id?: number;
+  id: number;
   job_id: string;
   customer_id: number;
   part_no: string;
@@ -14,71 +18,74 @@ interface Job {
   qty_ordered: number;
   qty_completed: number;
   due_date: string;
-  route: any;
+  route: RouteOp[];
   job_type: string;
   status: string;
   current_operation: string | null;
   customers?: { name: string };
 }
 
+interface Customer {
+  id: number;
+  name: string;
+}
+
+interface Part {
+  id: number;
+  part_no: string;
+  description: string;
+}
+
+const initialFormData = {
+  job_id: '',
+  customer_id: '',
+  part_no: '',
+  rev: 'A',
+  qty_ordered: '',
+  due_date: '',
+  job_type: 'CNC',
+  route: [{ op_seq: 10, op_name: '', machine_id: '', operator_id: '' }],
+};
+
 export default function Jobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [parts, setParts] = useState<any[]>([]);
-  const [machines, setMachines] = useState<any[]>([]);
-  const [operators, setOperators] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [parts, setParts] = useState<Part[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    job_id: '',
-    customer_id: '',
-    part_no: '',
-    rev: 'A',
-    qty_ordered: '',
-    due_date: '',
-    job_type: 'CNC',
-    route: [{ op_seq: 10, op_name: '', machine_id: '', operator_id: '' }],
-  });
-  const navigate = useNavigate();
+  const [formData, setFormData] = useState(initialFormData);
 
   useEffect(() => {
     loadJobs();
     loadCustomers();
     loadParts();
-    loadMachines();
-    loadOperators();
   }, []);
 
-  const loadJobs = async () => {
-    const { data } = await supabase
-      .from('jobs')
-      .select('*, customers(name)')
-      .order('created_at', { ascending: false });
-
-    if (data) setJobs(data);
+  const loadJobs = () => {
+    const mockJobs: Job[] = [
+      { id: 1, job_id: 'CNC-2025-001', customer_id: 1, part_no: 'P1001', rev: 'A', qty_ordered: 100, qty_completed: 50, due_date: '2025-11-15', route: [], job_type: 'CNC', status: 'in-progress', current_operation: 'OP10', customers: { name: 'ABC Corp' } },
+      { id: 2, job_id: 'PLT-2025-001', customer_id: 2, part_no: 'P2002', rev: 'B', qty_ordered: 200, qty_completed: 200, due_date: '2025-11-10', route: [], job_type: 'PLATING', status: 'completed', current_operation: null, customers: { name: 'XYZ Inc' } },
+    ];
+    setJobs(mockJobs);
   };
 
-  const loadCustomers = async () => {
-    const { data } = await supabase.from('customers').select('*').order('name');
-    if (data) setCustomers(data);
+  const loadCustomers = () => {
+    const mockCustomers: Customer[] = [
+        { id: 1, name: 'ABC Corp' },
+        { id: 2, name: 'XYZ Inc' },
+    ];
+    setCustomers(mockCustomers);
   };
 
-  const loadParts = async () => {
-    const { data } = await supabase.from('parts').select('*').order('part_no');
-    if (data) setParts(data);
+  const loadParts = () => {
+    const mockParts: Part[] = [
+        { id: 1, part_no: 'P1001', description: 'Part 1' },
+        { id: 2, part_no: 'P2002', description: 'Part 2' },
+    ];
+    setParts(mockParts);
   };
 
-  const loadMachines = async () => {
-    const { data } = await supabase.from('machines').select('*').order('name');
-    if (data) setMachines(data);
-  };
-
-  const loadOperators = async () => {
-    const { data } = await supabase.from('employees').select('*').in('role', ['CNC Operator', 'Plating Operator']);
-    if (data) setOperators(data);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (step < 3) {
@@ -86,7 +93,8 @@ export default function Jobs() {
       return;
     }
 
-    const jobData = {
+    const newJob = {
+      id: Math.max(...jobs.map(j => j.id || 0), 0) + 1,
       job_id: formData.job_id,
       customer_id: parseInt(formData.customer_id),
       part_no: formData.part_no,
@@ -98,10 +106,10 @@ export default function Jobs() {
       job_type: formData.job_type,
       status: 'pending',
       current_operation: null,
+      customers: { name: customers.find(c => c.id === parseInt(formData.customer_id))?.name || 'N/A' },
     };
 
-    await supabase.from('jobs').insert(jobData);
-    loadJobs();
+    setJobs([newJob, ...jobs]);
     handleClose();
   };
 
@@ -127,18 +135,18 @@ export default function Jobs() {
     });
   };
 
-  const updateOperation = (index: number, field: string, value: any) => {
+  const updateOperation = (index: number, field: string, value: string | number) => {
     const newRoute = [...formData.route];
-    newRoute[index] = { ...newRoute[index], [field]: value };
+    (newRoute[index] as Record<string, unknown>)[field] = value;
     setFormData({ ...formData, route: newRoute });
   };
 
-  const columns = [
+  const columns: { key: string; label: string; render?: (value: unknown, row: Job) => React.ReactNode }[] = [
     { key: 'job_id', label: 'Job ID' },
     {
       key: 'customers',
       label: 'Customer',
-      render: (value: any) => value?.name || '',
+      render: (v) => (v as { name: string })?.name,
     },
     { key: 'part_no', label: 'Part No' },
     { key: 'qty_ordered', label: 'Qty Ordered' },
@@ -147,19 +155,19 @@ export default function Jobs() {
     {
       key: 'status',
       label: 'Status',
-      render: (value: string) => (
+      render: (v) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            value === 'completed'
+            v === 'completed'
               ? 'bg-green-100 text-green-800'
-              : value === 'in-progress'
+              : v === 'in-progress'
               ? 'bg-blue-100 text-blue-800'
-              : value === 'pending-challan'
+              : v === 'pending-challan'
               ? 'bg-amber-100 text-amber-800'
               : 'bg-slate-100 text-slate-800'
           }`}
         >
-          {value.replace('-', ' ').toUpperCase()}
+          {(v as string).replace('-', ' ').toUpperCase()}
         </span>
       ),
     },

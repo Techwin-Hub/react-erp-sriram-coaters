@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { Plus } from 'lucide-react';
@@ -31,25 +30,23 @@ export default function Parts() {
     loadParts();
   }, []);
 
-  const loadParts = async () => {
-    const { data } = await supabase
-      .from('parts')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data) setParts(data);
+  const loadParts = () => {
+    const mockParts = [
+      { id: 1, part_no: 'P1001', rev: 'A', description: 'Main Gear', material: 'EN24', client_part_no: 'CPN-001', drawing_url: '' },
+      { id: 2, part_no: 'P1002', rev: 'B', description: 'Pinion Shaft', material: 'MS', client_part_no: 'CPN-002', drawing_url: '' },
+      { id: 3, part_no: 'P2001', rev: 'A', description: 'Flange', material: 'SS304', client_part_no: 'CPN-003', drawing_url: '' },
+    ];
+    setParts(mockParts);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (editingPart?.id) {
-      await supabase.from('parts').update(formData).eq('id', editingPart.id);
+      setParts(parts.map(p => p.id === editingPart.id ? { ...formData, id: editingPart.id } : p));
     } else {
-      await supabase.from('parts').insert(formData);
+      const newPart = { ...formData, id: Math.max(...parts.map(p => p.id || 0), 0) + 1 };
+      setParts([newPart, ...parts]);
     }
-
-    loadParts();
     handleClose();
   };
 
@@ -59,10 +56,9 @@ export default function Parts() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (part: Part) => {
+  const handleDelete = (part: Part) => {
     if (confirm(`Are you sure you want to delete ${part.part_no}?`)) {
-      await supabase.from('parts').delete().eq('id', part.id);
-      loadParts();
+      setParts(parts.filter(p => p.id !== part.id));
     }
   };
 

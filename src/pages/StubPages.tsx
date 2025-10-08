@@ -1,18 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
-import { Plus } from 'lucide-react';
+
+interface Enquiry {
+  enquiry_id: string;
+  customers: { name: string };
+  part_no: string;
+  qty: number;
+  estimated_cost: number;
+  status: string;
+}
 
 export function Enquiries() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<Enquiry[]>([]);
 
   useEffect(() => {
-    supabase.from('enquiries').select('*, customers(name)').then(({ data }) => data && setData(data));
+    const mockData: Enquiry[] = [
+      { enquiry_id: 'ENQ-001', customers: { name: 'New Client' }, part_no: 'P-123', qty: 1000, estimated_cost: 15000, status: 'quoted' }
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
     { key: 'enquiry_id', label: 'Enquiry ID' },
-    { key: 'customers', label: 'Customer', render: (v: any) => v?.name },
+    { key: 'customers', label: 'Customer', render: (v: { name: string }) => v?.name },
     { key: 'part_no', label: 'Part' },
     { key: 'qty', label: 'Qty' },
     { key: 'estimated_cost', label: 'Est. Cost' },
@@ -27,11 +37,24 @@ export function Enquiries() {
   );
 }
 
+interface Route {
+  part_no: string;
+  op_seq: number;
+  op_name: string;
+  machine_type: string;
+  setup_time_min: number;
+  run_time_per_piece_min: number;
+}
+
 export function Routing() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<Route[]>([]);
 
   useEffect(() => {
-    supabase.from('operations').select('*').then(({ data }) => data && setData(data));
+    const mockData: Route[] = [
+      { part_no: 'P-123', op_seq: 10, op_name: 'CNC Milling', machine_type: 'CNC Mill', setup_time_min: 60, run_time_per_piece_min: 5 },
+      { part_no: 'P-123', op_seq: 20, op_name: 'Deburring', machine_type: 'Manual', setup_time_min: 0, run_time_per_piece_min: 2 },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
@@ -51,11 +74,24 @@ export function Routing() {
   );
 }
 
+interface InventoryItem {
+  item_id: string;
+  name: string;
+  batch_no: string;
+  qty_on_hand: number;
+  location: string;
+  reorder_point: number;
+}
+
 export function Inventory() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<InventoryItem[]>([]);
 
   useEffect(() => {
-    supabase.from('inventory').select('*').then(({ data }) => data && setData(data));
+    const mockData: InventoryItem[] = [
+      { item_id: 'RM-001', name: 'EN24 Round Bar', batch_no: 'B-101', qty_on_hand: 500, location: 'Stores', reorder_point: 100 },
+      { item_id: 'C-001', name: 'Cutting Oil', batch_no: 'N/A', qty_on_hand: 50, location: 'Stores', reorder_point: 20 },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
@@ -75,11 +111,23 @@ export function Inventory() {
   );
 }
 
+interface Tool {
+  tool_id: string;
+  name: string;
+  last_purchase_cost: number;
+  useful_life_hours: number;
+  current_usage_hours: number;
+}
+
 export function Tooling() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<Tool[]>([]);
 
   useEffect(() => {
-    supabase.from('tooling').select('*').then(({ data }) => data && setData(data));
+    const mockData: Tool[] = [
+      { tool_id: 'T-001', name: '10mm End Mill', last_purchase_cost: 500, useful_life_hours: 100, current_usage_hours: 25 },
+      { tool_id: 'T-002', name: 'Drill Bit 5mm', last_purchase_cost: 150, useful_life_hours: 50, current_usage_hours: 40 },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
@@ -98,11 +146,23 @@ export function Tooling() {
   );
 }
 
+interface Inspection {
+  insp_id: string;
+  job_id: string;
+  insp_type: string;
+  result: string;
+  remarks: string;
+}
+
 export function Quality() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<Inspection[]>([]);
 
   useEffect(() => {
-    supabase.from('inspections').select('*').then(({ data }) => data && setData(data));
+    const mockData: Inspection[] = [
+      { insp_id: 'INSP-001', job_id: 'CNC-2025-001', insp_type: 'In-process', result: 'Pass', remarks: 'Dimensions OK' },
+      { insp_id: 'INSP-002', job_id: 'CNC-2025-001', insp_type: 'Final', result: 'Pass', remarks: 'All clear' },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
@@ -121,16 +181,28 @@ export function Quality() {
   );
 }
 
+interface MaintenanceRecord {
+  maintenance_id: string;
+  machines: { name: string };
+  type: string;
+  scheduled_date: string;
+  completed_date: string;
+  downtime_hours: number;
+}
+
 export function Maintenance() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<MaintenanceRecord[]>([]);
 
   useEffect(() => {
-    supabase.from('maintenance').select('*, machines(name)').then(({ data }) => data && setData(data));
+    const mockData: MaintenanceRecord[] = [
+      { maintenance_id: 'M-001', machines: { name: 'CNC-01' }, type: 'Preventive', scheduled_date: '2025-10-15', completed_date: '2025-10-15', downtime_hours: 4 },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
     { key: 'maintenance_id', label: 'Maintenance ID' },
-    { key: 'machines', label: 'Machine', render: (v: any) => v?.name },
+    { key: 'machines', label: 'Machine', render: (v: { name: string }) => v?.name },
     { key: 'type', label: 'Type' },
     { key: 'scheduled_date', label: 'Scheduled' },
     { key: 'completed_date', label: 'Completed' },
@@ -145,11 +217,23 @@ export function Maintenance() {
   );
 }
 
+interface PurchaseOrder {
+  po_no: string;
+  supplier_name: string;
+  item_description: string;
+  qty: number;
+  total_amount: number;
+  status: string;
+}
+
 export function Purchase() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<PurchaseOrder[]>([]);
 
   useEffect(() => {
-    supabase.from('purchase_orders').select('*').then(({ data }) => data && setData(data));
+    const mockData: PurchaseOrder[] = [
+      { po_no: 'PO-001', supplier_name: 'Steel Dynamics', item_description: 'EN24 Round Bar', qty: 500, total_amount: 150000, status: 'received' },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
@@ -169,11 +253,23 @@ export function Purchase() {
   );
 }
 
+interface DispatchRecord {
+  dispatch_id: string;
+  job_id: string;
+  lr_no: string;
+  eway_bill_no: string;
+  dispatch_date: string;
+  transporter_name: string;
+}
+
 export function Dispatch() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<DispatchRecord[]>([]);
 
   useEffect(() => {
-    supabase.from('dispatch').select('*').then(({ data }) => data && setData(data));
+    const mockData: DispatchRecord[] = [
+      { dispatch_id: 'D-001', job_id: 'CNC-2025-001', lr_no: 'LR123', eway_bill_no: 'EW123', dispatch_date: '2025-10-28', transporter_name: 'VRL' },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
@@ -193,11 +289,23 @@ export function Dispatch() {
   );
 }
 
+interface Expense {
+  expense_id: string;
+  date: string;
+  category: string;
+  amount: number;
+  vendor: string;
+  description: string;
+}
+
 export function Expenses() {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<Expense[]>([]);
 
   useEffect(() => {
-    supabase.from('expenses').select('*').then(({ data }) => data && setData(data));
+    const mockData: Expense[] = [
+      { expense_id: 'E-001', date: '2025-10-25', category: 'Consumables', amount: 5000, vendor: 'Local Supplier', description: 'Cutting oil purchase' },
+    ];
+    setData(mockData);
   }, []);
 
   const columns = [
