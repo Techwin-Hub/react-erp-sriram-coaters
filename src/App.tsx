@@ -12,7 +12,7 @@ import Jobs from './pages/Jobs';
 import ShopFloor from './pages/ShopFloor';
 import Challans from './pages/Challans';
 import Billing from './pages/Billing';
-import Attendance from './pages/Attendance';
+import AttendanceManagement from './pages/AttendanceManagement';
 import Reports from './pages/Reports';
 import {
   Enquiries,
@@ -73,7 +73,7 @@ function AppRoutes() {
                 <Route path="/purchase" element={<Purchase />} />
                 <Route path="/billing" element={<Billing />} />
                 <Route path="/dispatch" element={<Dispatch />} />
-                <Route path="/attendance" element={<Attendance />} />
+                <Route path="/attendance" element={<AttendanceManagement />} />
                 <Route path="/expenses" element={<Expenses />} />
                 <Route path="/reports" element={<Reports />} />
               </Routes>
